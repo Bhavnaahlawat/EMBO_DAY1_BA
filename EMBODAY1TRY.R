@@ -241,3 +241,13 @@ abline(v=hpd, lty=3)
 hist(sims$T_split, freq=FALSE, xlim=range(sims$T_split), col=rgb(1,0,0,1/4))
 
 
+
+#day 4
+
+library(relater)
+library(ggplot2)
+
+install.packages(relater)
+
+test1
+
