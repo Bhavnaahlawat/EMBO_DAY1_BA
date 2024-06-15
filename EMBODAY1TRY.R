@@ -548,13 +548,39 @@ head(clean_Pop3_fst_data)
 
 #filter the file by retaining only  the common SNPs
 
-commonSNPs_Pop1_Pop2 <- intersect(clean_Pop1_fst_data$POS,clean_Pop2_fst_data$POS)
-commonSNPs_Pop1_Pop2_dataframe <- tibble(POS= commonSNPs_Pop1_Pop2)
+commonSNPs_Pop1_Pop3 <- intersect(clean_Pop1_fst_data$POS,clean_Pop3_fst_data$POS)
+commonSNPs_Pop1_Pop3_dataframe <- tibble(POS= commonSNPs_Pop1_Pop3)
 
-Common_SNPs_to_retain <- intersect(commonSNPs_Pop1_Pop2_dataframe, clean_Pop3_fst_data$POS)
+Common_SNPs_to_retain <- intersect(commonSNPs_Pop1_Pop3_dataframe, clean_Pop2_fst_data$POS)
 
 
 
-typeof(commonSNPs_Pop1_Pop2_dataframe)
+typeof(commonSNPs_Pop1_Pop2)
 
+# this last step did not work out 
+# trying with code from Letizia 
+
+#Tàbita_Selection
+#Read the files with the Fst estimates (AFR_EUR.weir.fst, AFR_EAS.weir.fst and EAS_EUR.weir.fst)
+setwd("/Users/eugenia/Desktop/EMBO_Practical_Course_2024-main")
+Pop1_fst_data <- read.table(file = 'AFR_EUR.weir.fst', header = T)
+Pop2_fst_data <- read.table(file = 'AFR_EAS.weir.fst', header = T)
+Pop3_fst_data <- read.table(file = 'EAS_EUR.weir.fst', header = T)
+#Eliminate duplicate positions
+Pop1_fst_data_noDup <- Pop1_fst_data[!duplicated(Pop1_fst_data), ]
+Pop2_fst_data_noDup <- Pop2_fst_data[!duplicated(Pop2_fst_data), ]
+Pop3_fst_data_noDup <- Pop3_fst_data[!duplicated(Pop3_fst_data), ]
+#Exclude positions whose FST result was equal to Na
+Pop1_fst_data_noDup_noNA <- Pop1_fst_data_noDup[!is.na(Pop1_fst_data_noDup$WEIR_AND_COCKERHAM_FST), ]
+Pop2_fst_data_noDup_noNA <- Pop2_fst_data_noDup[!is.na(Pop2_fst_data_noDup$WEIR_AND_COCKERHAM_FST), ]
+Pop3_fst_data_noDup_noNA <- Pop3_fst_data_noDup[!is.na(Pop3_fst_data_noDup$WEIR_AND_COCKERHAM_FST), ]
+# Step 1: Find intersection between AFR_EUR, AFR_EAS positions
+AFR_EUR_AFR_EAS <- intersect(Pop1_fst_data_noDup_noNA$POS, Pop2_fst_data_noDup_noNA$POS)
+AFR_EUR_AFR_EAS_df <- data.frame(POS = AFR_EUR_AFR_EAS)
+AFR_EUR_AFR_EAS_EAS_EUR <- intersect(AFR_EUR_AFR_EAS, Pop3_fst_data_noDup_noNA$POS)
+# Step 4: Convert the final result to a data frame
+AFR_EUR_AFR_EAS_EAS_EUR_df <- data.frame(POS = AFR_EUR_AFR_EAS_EAS_EUR)
+AFR_EUR.weir.fst.common <- AFR_EUR.weir.fst.noDup.noNA[AFR_EUR.weir.fst.noDup.noNA$POS %in% AFR_EUR_AFR_EAS_EAS_EUR_df$POS, ]
+AFR_EAS.weir.fst.common <- AFR_EAS.weir.fst.noDup.noNA[AFR_EAS.weir.fst.noDup.noNA$POS %in% AFR_EUR_AFR_EAS_EAS_EUR_df$POS, ]
+EAS_EUR.weir.fst.common <- EAS_EUR.weir.fst.noDup.noNA[EAS_EUR.weir.fst.noDup.noNA$POS %in% AFR_EUR_AFR_EAS_EAS_EUR_df$POS, ]
 
