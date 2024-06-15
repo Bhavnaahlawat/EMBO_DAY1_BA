@@ -267,6 +267,7 @@ library(tidypopgen)
 
 library(admixtools) 
 library(ggplot2)
+
 modern_gt <- tidypopgen::gen_tibble("./modern_samples.bed", valid_alleles = c("A","T","C","G"),
                                     missing_alleles = c("X"))
 
@@ -403,5 +404,157 @@ autoplot(modern_pca, type = "scores") +
   labs(color = "population") +
   geom_point(data=lbk_pca_scores, mapping=aes(x=.data$.PC1, y=.data$.PC2), col = "black") + lims(x=c(30, 70), y = c(-10, 15))
 
+
+
+#second pratical 
+
+library(admixtools) 
+library(tidypopgen)
+
+
+f2_blocks = f2_from_precomp("./f2_tidypopgen", verbose = FALSE)
+
+neand_euras_wave <- qpwave(data = f2_blocks,
+                           left = c("French","Spanish","Tuscan"),
+                           right = c("AltaiNea","Mota", "Yoruba", "Denisova", "Mbuti")
+)
+
+
+neand_euras_wave
+
+french_adm <- qpadm(data = f2_blocks,
+                    left = c("Loschbour", "LBK", "Yamnaya"),
+                    right = c("Mbuti", "Mota", "Dinka", "Yoruba", "Han"), target= "French")
+
+french_adm$popdrop
+
+
+base_edges <- matrix( c("R", "Mbuti",
+                        "R", "eAfr",
+                        "eAfr", "Dinka","eAfr", "outAfrica",
+                        "outAfrica",    "Han",
+                        "outAfrica",    "Loschbour"),
+                      ncol=2,
+                      byrow = TRUE,
+                      dimnames=list(NULL, c("from","to")))
+
+base_edges
+
+
+base_igraph <- base_edges %>% edges_to_igraph()
+
+
+is_valid(base_igraph)
+
+base_igraph %>% plot_graph()
+
+base_igraph %>% plotly_graph()
+
+install.packages("plotly")
+
+library(plotly)
+
+base_qpgraph <- qpgraph(data = f2_blocks, graph = base_igraph)
+
+base_qpgraph$f3
+
+base_qpgraph$f3 %>% filter(abs(z)>2)
+
+base_qpgraph$edges %>% plot_graph()
+
+fits = qpgraph_resample_multi(f2_blocks,
+                              graphlist = list(base_qpgraph[[1]], base_swapped_qpgraph[[1]]), 
+                              nboot = 100) 
+                              
+
+compare_fits(fits[[1]]$score_test, fits[[2]]$score_test)
+                              
+
+base_igraph %>% plot_graph(highlight_unidentifiable = TRUE)                  
+
+
+lbk_extra_edges <- matrix( 
+  c(
+  "R",    "Mbuti",
+  "R",    "eAfr",
+  "eAfr", "pBasalEurasian",
+  "eAfr", "Dinka",
+  "pBasalEurasian", "BasalEurasian",
+  "pBasalEurasian","outAfrica",
+  "outAfrica", "Han",
+  "outAfrica","wEurasian",
+  "wEurasian", "Yamnaya",
+  "wEurasian", "pLoschbour",
+  "pLoschbour", "Loschbour",
+  "pLoschbour","WHG",
+  "BasalEurasian", "pLBK",
+  "WHG", "pLBK",
+  "pLBK","LBK"),
+  ncol = 2,
+  byrow = TRUE,
+  dimnames = list(NULL, c("from", "to")))
+lbk_extra_igraph <- lbk_extra_edges %>% edges_to_igraph()
+lbk_extra_igraph %>% plot_graph()
+
+is_valid(lbk_extra_igraph)
+lbk_extra_igraph %>% plot_graph(highlight_unidentifiable = TRUE)
+
+lbk_extra_qpgraph <- qpgraph(data = f2_blocks, graph = lbk_extra_igraph)
+lbk_extra_qpgraph$edges %>% plot_graph()
+
+
+
+#Day 6 pratical by Tabitia 
+
+
+# Reading a FST file
+Pop1_fst_data <- read.table("./AFR_EAS.weir.fst")
+Pop2_fst_data <- read.table("./AFR_EUR.weir.fst")
+Pop3_fst_data <- read.table("./EAS_EUR.weir.fst")
+
+#Eliminate duplicate positions
+
+install.packages("dplyr")
+library(dplyr)
+
+# Remove duplicate rows based on the Position column using base R
+Pop1_fst_data_Nodups <- Pop1_fst_data [!duplicated(Pop1_fst_data), ]
+Pop2_fst_data_Nodups <- Pop2_fst_data [!duplicated(Pop2_fst_data), ]
+Pop3_fst_data_Nodups <- Pop3_fst_data [!duplicated(Pop3_fst_data), ]
+
+# Display the first few rows of the data to verify duplicates are removed
+head(Pop1_fst_data_Nodups)
+head(Pop2_fst_data_Nodups)
+head(Pop3_fst_data_Nodups)
+
+
+# Assuming your data frame is named fst_data, exclude values with NA values 
+clean_Pop1_fst_data_Nodups <- na.omit(Pop1_fst_data_Nodups)
+clean_Pop2_fst_data_Nodups <- na.omit(Pop2_fst_data_Nodups)
+clean_Pop3_fst_data_Nodups <- na.omit(Pop3_fst_data_Nodups)
+
+# since there were no duplicates we can also use the initial file as well
+
+clean_Pop1_fst_data <- na.omit(Pop1_fst_data)
+clean_Pop2_fst_data <- na.omit(Pop2_fst_data)
+clean_Pop3_fst_data <- na.omit(Pop3_fst_data)
+
+
+# Display the first few rows to verify NAs are removed
+head(clean_Pop1_fst_data)
+head(clean_Pop2_fst_data)
+head(clean_Pop3_fst_data)
+
+
+#filter the file by retaining only  the common SNPs
+
+commonSNPs_Pop1_Pop2 <- intersect(clean_Pop1_fst_data$POS,clean_Pop2_fst_data$POS)
+commonSNPs_Pop1_Pop2_dataframe <- tibble(POS= commonSNPs_Pop1_Pop2)
+
+Common_SNPs_to_retain <- intersect(commonSNPs_Pop1_Pop2_dataframe, clean_Pop3_fst_data$POS)
+
+
+
+typeof(commonSNPs_Pop1_Pop2_dataframe)
 
 
