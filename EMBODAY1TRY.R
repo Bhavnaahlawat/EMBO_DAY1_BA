@@ -584,3 +584,125 @@ AFR_EUR.weir.fst.common <- AFR_EUR.weir.fst.noDup.noNA[AFR_EUR.weir.fst.noDup.no
 AFR_EAS.weir.fst.common <- AFR_EAS.weir.fst.noDup.noNA[AFR_EAS.weir.fst.noDup.noNA$POS %in% AFR_EUR_AFR_EAS_EAS_EUR_df$POS, ]
 EAS_EUR.weir.fst.common <- EAS_EUR.weir.fst.noDup.noNA[EAS_EUR.weir.fst.noDup.noNA$POS %in% AFR_EUR_AFR_EAS_EAS_EUR_df$POS, ]
 
+
+#Letizias code which worked 
+#Read the files with the Fst estimates (AFR_EUR.weir.fst, AFR_EAS.weir.fst and EAS_EUR.weir.fst)
+setwd("/Users/eugenia/Desktop/EMBO_Practical_Course_2024-main")
+AFR_EUR.weir.fst <- read.table(file = 'AFR_EUR.weir.fst', header = T)
+AFR_EAS.weir.fst <- read.table(file = 'AFR_EAS.weir.fst', header = T)
+EAS_EUR.weir.fst <- read.table(file = 'EAS_EUR.weir.fst', header = T)
+#Eliminate duplicate positions
+AFR_EUR.weir.fst.noDup <- AFR_EUR.weir.fst[!duplicated(AFR_EUR.weir.fst), ]
+AFR_EAS.weir.fst.noDup <- AFR_EAS.weir.fst[!duplicated(AFR_EAS.weir.fst), ]
+EAS_EUR.weir.fst.noDup <- EAS_EUR.weir.fst[!duplicated(EAS_EUR.weir.fst), ]
+#Exclude positions whose FST result was equal to Na
+AFR_EUR.weir.fst.noDup.noNA <- AFR_EUR.weir.fst.noDup[!is.na(AFR_EUR.weir.fst.noDup$WEIR_AND_COCKERHAM_FST), ]
+AFR_EAS.weir.fst.noDup.noNA <- AFR_EAS.weir.fst.noDup[!is.na(AFR_EAS.weir.fst.noDup$WEIR_AND_COCKERHAM_FST), ]
+EAS_EUR.weir.fst.noDup.noNA <- EAS_EUR.weir.fst.noDup[!is.na(EAS_EUR.weir.fst.noDup$WEIR_AND_COCKERHAM_FST), ]
+# Step 1: Find intersection between AFR_EUR, AFR_EAS positions
+AFR_EUR_AFR_EAS <- intersect(AFR_EUR.weir.fst.noDup.noNA$POS, AFR_EAS.weir.fst.noDup.noNA$POS)
+AFR_EUR_AFR_EAS_df <- data.frame(POS = AFR_EUR_AFR_EAS)
+AFR_EUR_AFR_EAS_EAS_EUR <- intersect(AFR_EUR_AFR_EAS, EAS_EUR.weir.fst.noDup.noNA$POS)
+# Step 4: Convert the final result to a data frame
+AFR_EUR_AFR_EAS_EAS_EUR_df <- data.frame(POS = AFR_EUR_AFR_EAS_EAS_EUR)
+AFR_EUR.weir.fst.common <- AFR_EUR.weir.fst.noDup.noNA[AFR_EUR.weir.fst.noDup.noNA$POS %in% AFR_EUR_AFR_EAS_EAS_EUR_df$POS, ]
+AFR_EAS.weir.fst.common <- AFR_EAS.weir.fst.noDup.noNA[AFR_EAS.weir.fst.noDup.noNA$POS %in% AFR_EUR_AFR_EAS_EAS_EUR_df$POS, ]
+EAS_EUR.weir.fst.common <- EAS_EUR.weir.fst.noDup.noNA[EAS_EUR.weir.fst.noDup.noNA$POS %in% AFR_EUR_AFR_EAS_EAS_EUR_df$POS, ]
+
+
+#step 5: Convert positions with estimates from FST < 0 to = 0
+
+AFR_EUR.weir.fst.common$WEIR_AND_COCKERHAM_FST <- ifelse(AFR_EUR.weir.fst.common$WEIR_AND_COCKERHAM_FST < 0, 0, AFR_EUR.weir.fst.common$WEIR_AND_COCKERHAM_FST)
+min(AFR_EUR.weir.fst.common$WEIR_AND_COCKERHAM_FST)
+AFR_EAS.weir.fst.common$WEIR_AND_COCKERHAM_FST <- ifelse(AFR_EAS.weir.fst.common$WEIR_AND_COCKERHAM_FST < 0, 0, AFR_EAS.weir.fst.common$WEIR_AND_COCKERHAM_FST)
+min(AFR_EAS.weir.fst.common$WEIR_AND_COCKERHAM_FST)
+EAS_EUR.weir.fst.common$WEIR_AND_COCKERHAM_FST <- ifelse(EAS_EUR.weir.fst.common$WEIR_AND_COCKERHAM_FST < 0, 0, EAS_EUR.weir.fst.common$WEIR_AND_COCKERHAM_FST)
+min(EAS_EUR.weir.fst.common$WEIR_AND_COCKERHAM_FST)
+
+
+#Step 6: Given value x (SNP position)
+x <- 109513601
+calculate_window <- function(x) {
+  lower_bound <- x - 5000
+  upper_bound <- x + 5000
+  return(c(lower_bound, upper_bound))
+}
+bounds <- calculate_window(x)
+AFR_EUR_10kb <- AFR_EUR.weir.fst.common %>%
+  filter(POS >= bounds[1], POS <= bounds[2])
+AFR_EAS_10kb <- AFR_EAS.weir.fst.common %>%
+  filter(POS >= bounds[1], POS <= bounds[2])
+EAS_EUR_10kb <- EAS_EUR.weir.fst.common %>%
+  filter(POS >= bounds[1], POS <= bounds[2])
+
+#Step 7: Plot FST values 
+
+#trying histogram first
+pdf("FST_plot_AFR_EUR_10kb.pdf")
+hist(AFR_EUR.weir.fst.common$WEIR_AND_COCKERHAM_FST, breaks =100, xlab="fst", ylab = "frequecy", col = "blue")
+dev.off()
+pdf("FST_plot_AFR_EAS_10kb.pdf")
+hist(AFR_EAS.weir.fst.common$WEIR_AND_COCKERHAM_FST, breaks =100, xlab="fst", ylab = "frequecy", col = "Red")
+dev.off()
+pdf("FST_plot_EAS_EUR_10kb.pdf")
+hist(EAS_EUR.weir.fst.common$WEIR_AND_COCKERHAM_FST, breaks =100, xlab="fst", ylab = "frequecy", col = "Green")
+dev.off()
+
+
+
+
+#trying ggplot second
+library(ggplot2)
+pdf("FST_plot_AFR_EUR_2_10kb.pdf")
+
+ggplot(data = AFR_EUR.weir.fst.common$WEIR_AND_COCKERHAM_FST, aes(x = fst, y = frequency, col = blue)) + geom_line() + geom_point() + theme_bw() + ylab("frequency") + xlab("fst") + ggtitle("FST_plot_AFR_EUR")
+dev.off()
+
+
+
+
+
+#trying PBS 
+
+
+# Load necessary libraries
+
+
+# Generate some synthetic SNP data for three populations
+set.seed(123)
+n <- 100  # Number of individuals per population
+m <- 1000  # Number of SNPs
+
+EAS <- matrix(sample(0:2, n * m, replace = TRUE), nrow = n)
+EUR <- matrix(sample(0:2, n * m, replace = TRUE), nrow = n)
+AFR <- matrix(sample(0:2, n * m, replace = TRUE), nrow = n)
+
+# Combine into a genind object
+pop <- factor(rep(c("EAS", "EUR", "AFR"), each = n))
+genind_obj <- df2genind(cbind(EAS, EUR, AFR), pop = pop, ploidy = 2, type = "codom")
+
+# Calculate pairwise Fst values
+fst_matrix <- pairwise.fst(genind_obj)
+print(fst_matrix)
+
+# Define a function to calculate PBS values
+calculate_PBS <- function(fst1, fst2, fst3) {
+  T1 <- -log(1 - fst1)
+  T2 <- -log(1 - fst2)
+  T3 <- -log(1 - fst3)
+  PBS <- (T1 + T2 - T3) / 2
+  return(PBS)
+}
+
+# Extract Fst values from the matrix
+fst_EAS_EUR <- fst_matrix["EAS", "EUR"]
+fst_EAS_AFR <- fst_matrix["EAS", "AFR"]
+fst_EUR_AFR <- fst_matrix["EUR", "AFR"]
+
+# Calculate PBS for EAS
+PBS_EAS <- calculate_PBS(fst_EAS_EUR, fst_EAS_AFR, fst_EUR_AFR)
+print(PBS_EAS)
+
+
+
+
